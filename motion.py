@@ -10,6 +10,25 @@ import datetime
 import os
 #import ipdb
 
+PIC_DIR = "/shared/"
+
+def shoot_pics(number, resolution, delay_sec):
+	resolution_init = camera.resolution
+	camera.resolution = resolution 
+	print ""
+	while number > 0:
+		date = datetime.datetime.now()
+		directory = "{}_{:02d}_{:02d}".format(date.year, date.month, date.day)
+		if not os.path.exists(os.path.join(PIC_DIR, directory)):
+			os.mkdir(os.path.join(PIC_DIR, directory))
+		filename = "{:02d}{:02d}{:02d}.jpg".format(date.hour, date.minute, date.second)
+		print "Active! Writing to {}/{}/{}".format(PIC_DIR, directory, filename), "\r",
+		camera.capture(os.path.join(PIC_DIR, directory, filename), format="jpeg", use_video_port=True)
+		number -= 1
+		time.sleep(delay_sec)
+	camera.resolution = resolution_init
+
+
 with picamera.PiCamera() as camera:
 	image_data = StringIO.StringIO()
 	camera.resolution = (160, 120)
@@ -33,18 +52,14 @@ with picamera.PiCamera() as camera:
 		print "{:6.2f} fps".format(float(counter)/(time.time()-start_time)), "\r",
 		imarr1 = imarr2
 		counter += 1
-		if brightness > 50 or difference > 20:
-			print ""
-			active = 5 
-			while active > 0:
-				date = datetime.datetime.now()
-				directory = "{}_{:02d}_{:02d}".format(date.year, date.month, date.day)
-				if not os.path.exists(directory):
-					os.mkdir(directory)
-				filename = "{:02d}{:02d}{:02d}.jpg".format(date.hour, date.minute, date.second)
-				print "Active! Writing to {}/{}".format(directory, filename), "\r",
-				camera.capture(os.path.join(directory, filename), format="jpeg", use_video_port=True)
-				active -= 1
-				time.sleep(1)
+
+		if difference > 5 and counter > 20:
+			shoot_pics(5, (640,480), 1)
+			counter = 0
+			start_time = time.time()
+
+		if counter == 1000:
+			counter = 0
+
 
 		
