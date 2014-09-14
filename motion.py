@@ -8,9 +8,9 @@ import numpy as np
 import time
 import datetime
 import os
-#import ipdb
+import ipdb
 
-PIC_DIR = "/shared/"
+PIC_DIR = "/home/pi/fotos/"
 
 def shoot_pics(number, resolution, delay_sec):
 	resolution_init = camera.resolution
@@ -27,6 +27,7 @@ def shoot_pics(number, resolution, delay_sec):
 		number -= 1
 		time.sleep(delay_sec)
 	camera.resolution = resolution_init
+	print ""
 
 
 with picamera.PiCamera() as camera:
@@ -34,9 +35,8 @@ with picamera.PiCamera() as camera:
 	camera.resolution = (160, 120)
 	camera.capture(image_data, format="bmp", use_video_port=True)
 	data = np.fromstring(image_data.getvalue(), dtype=np.uint8)
-	imarr1 = cv2.imdecode(data, 1)
+	imarr1 = cv2.imdecode(data, 1).sum(axis=2)/3
 	image_data.reset()
-
 	counter = 0
 	active = 0
 	start_time = time.time()
@@ -44,16 +44,16 @@ with picamera.PiCamera() as camera:
 		image_data = StringIO.StringIO()
 		camera.capture(image_data, format="bmp", use_video_port=True)
 		data = np.fromstring(image_data.getvalue(), dtype=np.uint8)
-		imarr2 = cv2.imdecode(data, 1)
+		imarr2 = cv2.imdecode(data, 1).sum(axis=2)/3
 		difference = 100*float(((imarr2-imarr1)**2).sum())/(imarr1**2).sum()
-		brightness = 100*float(imarr2.sum())/(255*imarr2.shape[0]*imarr2.shape[1]*3)
+		brightness = 100*float(imarr2.sum())/(255*imarr2.shape[0]*imarr2.shape[1])
 		print "Difference: {:6.2f}%".format(difference), 
 		print "Brightness: {:6.2f}%".format(brightness),
 		print "{:6.2f} fps".format(float(counter)/(time.time()-start_time)), "\r",
 		imarr1 = imarr2
 		counter += 1
 
-		if difference > 5 and counter > 20:
+		if difference > 3 and counter > 20:
 			shoot_pics(5, (640,480), 1)
 			counter = 0
 			start_time = time.time()
