@@ -53,9 +53,9 @@ with picamera.PiCamera() as camera:
 		imarr1 = imarr2
 		counter += 1
 
-		if difference > 3 and counter > 20:
+		if difference > 3 and counter >= 0:
 			shoot_pics(5, (640,480), 1)
-			counter = 0
+			counter = -20
 			start_time = time.time()
 
 		if counter == 1000:
