@@ -8,7 +8,8 @@ import numpy as np
 import time
 import datetime
 import os
-import ipdb
+import sys
+#import ipdb
 
 PIC_DIR = "/home/pi/fotos/"
 
@@ -29,6 +30,12 @@ def shoot_pics(number, resolution, delay_sec):
 	camera.resolution = resolution_init
 	print ""
 
+#specify time in minutes
+if len(sys.argv) > 1:
+	max_time = int(sys.argv[1])*60
+	infinite = False
+else:
+	infinite = True
 
 with picamera.PiCamera() as camera:
 	image_data = StringIO.StringIO()
@@ -40,7 +47,7 @@ with picamera.PiCamera() as camera:
 	counter = 0
 	active = 0
 	start_time = time.time()
-	while 1:
+	while infinite == True or time.time()-start_time < max_time:
 		image_data = StringIO.StringIO()
 		camera.capture(image_data, format="bmp", use_video_port=True)
 		data = np.fromstring(image_data.getvalue(), dtype=np.uint8)
@@ -53,7 +60,7 @@ with picamera.PiCamera() as camera:
 		imarr1 = imarr2
 		counter += 1
 
-		if difference > 3 and counter >= 0:
+		if difference > 3 and brightness > 10 and counter >= 0:
 			shoot_pics(5, (640,480), 1)
 			counter = -20
 			start_time = time.time()
