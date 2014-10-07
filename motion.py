@@ -9,7 +9,7 @@ import time
 import datetime
 import os
 import sys
-#import ipdb
+import subprocess
 
 PIC_DIR = "/home/pi/fotos/"
 
@@ -32,9 +32,11 @@ def shoot_pics(number, resolution, delay_sec):
 
 #specify time in minutes
 if len(sys.argv) > 1:
+	print "time specified. running for {} minutes.".format(sys.argv[1])
 	max_time = int(sys.argv[1])*60
 	infinite = False
 else:
+	print "no time specified. running forever."
 	infinite = True
 
 with picamera.PiCamera() as camera:
@@ -46,6 +48,9 @@ with picamera.PiCamera() as camera:
 	image_data.reset()
 	counter = 0
 	active = 0
+	shooting_stop = 20
+	light_stop = 0
+	light = False
 	start_time = time.time()
 	while infinite == True or time.time()-start_time < max_time:
 		image_data = StringIO.StringIO()
@@ -60,10 +65,25 @@ with picamera.PiCamera() as camera:
 		imarr1 = imarr2
 		counter += 1
 
-		if difference > 3 and brightness > 10 and counter >= 0:
+		if difference > 0.3 and brightness > 5 and time.time() > light_stop:
+			subprocess.call("rcsend 11111 4 1".split())
+			light = True
+			light_stop = time.time() + 5 
+			shooting_stop = time.time() + 1
+
+		if difference > 0.9 and brightness > 10 and time.time() > shooting_stop:
 			shoot_pics(5, (640,480), 1)
-			counter = -20
-			start_time = time.time()
+			shooting_stop = time.time() + 20
+			light_stop = time.time() + 20
+			light = True
+
+		if time.time() > light_stop and light == True:
+			subprocess.call("rcsend 11111 4 0".split())
+			light = False
+			light_stop = time.time() + 1 
+			shooting_stop = time.time() + 1 
+ 
+
 
 		if counter == 1000:
 			counter = 0
