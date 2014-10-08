@@ -12,6 +12,7 @@ import sys
 import subprocess
 
 PIC_DIR = "/home/pi/fotos/"
+log_filename = "/home/pi/motion_log"
 
 def shoot_pics(number, resolution, delay_sec):
 	resolution_init = camera.resolution
@@ -50,8 +51,13 @@ with picamera.PiCamera() as camera:
 	active = 0
 	shooting_stop = 20
 	light_stop = 0
+	last_log = 0
 	light = False
 	start_time = time.time()
+	
+	with open(log_filename, "aw") as f:
+		print >> f, "#Start at {}".format(datetime.datetime.now())
+
 	while infinite == True or time.time()-start_time < max_time:
 		image_data = StringIO.StringIO()
 		camera.capture(image_data, format="bmp", use_video_port=True)
@@ -64,24 +70,29 @@ with picamera.PiCamera() as camera:
 		print "{:6.2f} fps".format(float(counter)/(time.time()-start_time)), "\r",
 		imarr1 = imarr2
 		counter += 1
+		time_now = time.time()
+		
+		if time_now > light_stop:
+			if (difference > 0.3 and brightness > 15) or (difference > 0.9 and brightness > 5):
+				subprocess.call("rcsend 11111 4 1".split())
+				light = True
+				light_stop = time_now + 5 
+				shooting_stop = time_now + 1
 
-		if difference > 0.3 and brightness > 5 and time.time() > light_stop:
-			subprocess.call("rcsend 11111 4 1".split())
-			light = True
-			light_stop = time.time() + 5 
-			shooting_stop = time.time() + 1
-
-		if difference > 0.9 and brightness > 10 and time.time() > shooting_stop:
+		if difference > 0.9 and brightness > 10 and time_now > shooting_stop:
 			shoot_pics(5, (640,480), 1)
-			shooting_stop = time.time() + 20
-			light_stop = time.time() + 20
+			shooting_stop = time_now + 20
+			light_stop = time_now + 20
 			light = True
 
-		if time.time() > light_stop and light == True:
+		if time_now > light_stop and light == True:
 			subprocess.call("rcsend 11111 4 0".split())
 			light = False
-			light_stop = time.time() + 1 
-			shooting_stop = time.time() + 1 
+			light_stop = time_now + 1 
+			shooting_stop = time_now + 1 
+		if time_now % 60 == 0 and time_now > last_log: 
+			with open(log_filename, "aw") as f:
+				print >> f, datetime.datetime.now().hour*60+datetime.datetime.now().minute, brightness
  
 
 
