@@ -70,7 +70,7 @@ with picamera.PiCamera() as camera:
 		print "{:6.2f} fps".format(float(counter)/(time.time()-start_time)), "\r",
 		imarr1 = imarr2
 		counter += 1
-		time_now = time.time()
+		time_now = int(time.time())
 		
 		if time_now > light_stop:
 			if (difference > 0.3 and brightness > 15) or (difference > 0.9 and brightness > 5):
@@ -93,11 +93,11 @@ with picamera.PiCamera() as camera:
 		if time_now % 60 == 0 and time_now > last_log: 
 			with open(log_filename, "aw") as f:
 				print >> f, datetime.datetime.now().hour*60+datetime.datetime.now().minute, brightness
- 
-
+			last_log = time_now
 
 		if counter == 1000:
 			counter = 0
+			start_time = time.time()
 
 
 		
